@@ -1,0 +1,347 @@
+mqtt:
+  host: 192.168.1.xxx
+  port: 1883
+  user: homeassistant
+  password: xxxxxx
+  topic_prefix: frigate
+
+ffmpeg:
+  hwaccel_args: preset-vaapi
+
+detectors:
+  coral:
+    type: edgetpu
+    device: usb
+
+birdseye:
+  enabled: True
+  mode: continuous
+  restream: True  
+  width: 1920
+  height: 1080
+  quality: 15
+
+go2rtc:
+  streams:
+    front_left:
+      - rtsp://admin:123456@192.168.1.189/stream0#backchannel=0
+    front_left_sub:
+      - rtsp://admin:123456@192.168.1.189/stream1#backchannel=0
+    front_right:
+      - rtsp://admin:xxxxxx@192.168.1.30:554/h264Preview_01_main#backchannel=0
+      - "ffmpeg:front_right#audio=opus#video=h264#hardware=vaapi"
+    front_right_sub:
+      - rtsp://admin:xxxxxx@192.168.1.30:554/h264Preview_01_sub#backchannel=0
+    rear_right:
+      - rtsp://admin:123456@192.168.1.59/stream0#backchannel=0
+    rear_right_sub:
+      - rtsp://admin:123456@192.168.1.59/stream1#backchannel=0
+    rear_left:
+      - rtsp://admin:123456@192.168.1.190/stream0#backchannel=0
+    rear_left_sub:
+      - rtsp://admin:123456@192.168.1.190/stream1#backchannel=0    
+    inside_stairs:
+      - http://192.168.1.53:2323/?cmd=getCamshot&password=xxxxxx
+      - "ffmpeg:http://127.0.0.1:1984/api/stream.mjpeg?src=inside_stairs#video=h264"
+    inside_kitchen:
+      - http://192.168.1.9:2323/?cmd=getCamshot&password=xxxxxx
+      - "ffmpeg:http://127.0.0.1:1984/api/stream.mjpeg?src=inside_kitchen#video=h264"
+
+  webrtc:
+    candidates:
+      - 192.168.1.60:8555
+      - stun:8555    
+
+cameras:
+  front_left:
+    
+    snapshots: # <----- Enable snapshots
+      enabled: True
+
+    mqtt:
+      timestamp: False
+      bounding_box: False
+      crop: True
+      quality: 100
+      height: 500        
+
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/front_left_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+
+        - path: rtsp://127.0.0.1:8554/front_left
+          input_args: preset-rtsp-restream
+          roles:
+            - record  
+
+            
+    detect:
+      enabled: True
+      width: 704 
+      height: 576 
+      fps: 15
+      max_disappeared: 50
+
+    objects:
+      track:
+        - person
+        - car
+        - dog
+        - cat
+
+    record:
+      enabled: True
+      retain:
+       days: 2
+       mode: all
+      events:
+       retain:
+        default: 14
+        mode: active_objects 
+       pre_capture: 15
+       post_capture: 15 
+
+  front_right:
+
+    mqtt:
+      timestamp: False
+      bounding_box: False
+      crop: True
+      quality: 100
+      height: 500       
+
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/front_right_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect  
+
+        - path: rtsp://127.0.0.1:8554/front_right
+          input_args: preset-rtsp-restream
+          roles:
+            - record            
+            
+    detect:
+      enabled: True
+      width: 896 
+      height: 512 
+      fps: 20
+      max_disappeared: 50
+
+    zones:
+      zone_0:
+        coordinates: 601,209,625,143,498,117,451,178
+      zone_1:
+        coordinates: 0,512,455,512,647,225,637,220,454,179,502,114,542,111,561,112,599,129,639,134,442,512,896,512,896,271,896,224,896,159,431,60,330,53,292,54,266,74,237,49,211,70,116,100,0,129,0,185
+
+ 
+    objects:
+      track:
+        - person
+        - car
+        - truck
+        - bicycle
+        - motorcycle
+        - dog
+        - cat
+
+    snapshots:
+      enabled: True
+
+    record:
+      enabled: True
+      retain:
+       days: 2
+       mode: all
+      events:
+       required_zones:
+        - zone_1        
+       retain:
+        default: 14
+        mode: active_objects   
+       pre_capture: 15
+       post_capture: 15 
+  
+  rear_right:
+
+    snapshots: # <----- Enable snapshots
+      enabled: True
+
+    mqtt:
+      timestamp: False
+      bounding_box: False
+      crop: True
+      quality: 100
+      height: 500        
+
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/rear_right_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+        - path: rtsp://127.0.0.1:8554/rear_right
+          input_args: preset-rtsp-restream
+          roles:
+            - record  
+
+    motion:
+     mask:
+      - 0,143,435,0,0,0
+      - 704,0,704,576,638,576,677,376,690,40,678,0        
+
+    detect:
+      enabled: True
+      width: 704
+      height: 576 
+      fps: 15
+      max_disappeared: 50
+
+
+    objects:
+      track:
+        - person
+        - dog
+        - cat
+
+    record:
+      enabled: True
+      retain:
+       days: 2
+       mode: all
+      events:
+       retain:
+        default: 14
+        mode: active_objects 
+       pre_capture: 15
+       post_capture: 15   
+
+  rear_left:
+
+    snapshots: # <----- Enable snapshots
+      enabled: True
+
+    mqtt:
+      timestamp: False
+      bounding_box: False
+      crop: True
+      quality: 100
+      height: 500        
+
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/rear_left_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+
+        - path: rtsp://127.0.0.1:8554/rear_left
+          input_args: preset-rtsp-restream
+          roles:
+            - record  
+            
+    detect:
+      enabled: True
+      width: 704 
+      height: 576 
+      fps: 15
+      max_disappeared: 50
+
+    objects:
+      track:
+        - person
+        - dog
+        - cat
+
+    record:
+      enabled: True
+      retain:
+       days: 2
+       mode: all
+      events:
+       retain:
+        default: 14
+        mode: active_objects   
+
+  inside_kitchen:
+
+    birdseye:
+      enabled: False      
+
+    snapshots: # <----- Enable snapshots
+      enabled: True
+
+    mqtt:
+      timestamp: False
+      bounding_box: False
+      crop: True
+      quality: 100
+      height: 500        
+
+    ffmpeg: 
+      inputs:
+        - path: rtsp://127.0.0.1:8554/inside_kitchen
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+            - detect
+
+    detect:
+      enabled: True # <---- disable detection until you have a working camera feed
+      width: 320 # <---- update for your camera's resolution
+      height: 240 # <---- update for your camera's resolution
+      fps: 1
+
+    record:
+      enabled: True
+      retain:
+       days: 2
+       mode: all
+      events:
+       retain:
+        default: 14
+        mode: active_objects         
+
+
+  inside_stairs:
+
+    snapshots: # <----- Enable snapshots
+      enabled: True    
+
+    birdseye:
+      enabled: False  
+
+    mqtt:
+      timestamp: False
+      bounding_box: False
+      crop: True
+      quality: 100
+      height: 500         
+
+    ffmpeg: 
+      inputs:
+        - path: rtsp://127.0.0.1:8554/inside_stairs
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+            - detect            
+
+    detect:
+      enabled: True # <---- disable detection until you have a working camera feed
+      width: 320 # <---- update for your camera's resolution
+      height: 240 # <---- update for your camera's resolution
+      fps: 1        
+
+    record:
+      enabled: True
+      retain:
+       days: 2
+       mode: all
+      events:
+       retain:
+        default: 14
+        mode: active_objects
